@@ -1,0 +1,53 @@
+Marketplace {
+	roles Buyer, eBay, PayPal, Merchant, Shipper
+    parameters out orderID key, out payment, out item
+    private address, name, hold, orderInfo, blah, paymentHold, shipping, trackNum, trackingInfo, shipmentNotification,
+    orderReceived, delivered, passedConfirmation, review, fund, sentFund, revtxn, defect, defectNotice,
+    defRefundRequest, defRefundSent, defectiveRefund, cancel
+     
+    
+    Buyer -> eBay: Order [out orderID key, out address, out name]
+    Buyer -> eBay: PaymentEbay [in orderID key, in name, in address, out payment]
+    
+    Buyer -> eBay: CancelOrder [in orderID key, in payment, out cancel]
+    
+    eBay -> Buyer: Confirmation[in orderID key, in name, in address, out blah]
+
+    eBay -> PayPal: PaymentPaypal [in orderID key, in name, in payment, out hold]
+
+    eBay -> Merchant: OrderDetails [in orderID key, in name, in address, nil cancel, out orderInfo]
+    PayPal -> Merchant: HoldNotice [in orderID key, in name, in payment, nil cancel, out paymentHold]
+    
+    Merchant -> Shipper: SendItem [in orderID key, in name, in address, in paymentHold, out item]
+    
+    Shipper -> Buyer: ShipPackedItem [in orderID key, in item, out shipping]
+    Shipper -> Merchant: Tracking [in orderID key, in name, in address, in item, out trackNum]
+    
+    Merchant -> eBay: UploadTracking [in orderID key, in name, in address, in trackNum, out trackingInfo]
+    
+    eBay -> Buyer: ItemShipped [in orderID key, in trackNum, out shipmentNotification]
+    Buyer -> Shipper: ItemReceived [in orderID key, in trackNum, in shipmentNotification, in shipping, out orderReceived]
+    Buyer -> eBay: ReviewSubmission [in orderID key, in shipping, in shipmentNotification, out review]
+    
+       
+    Shipper -> Merchant: DeliveryConfirmation [in orderID key, in trackNum, out delivered]
+    Merchant -> eBay: PassDeliveryConfirmation [in orderID key, in trackNum, in delivered, out passedConfirmation]
+    
+    eBay -> PayPal: ReleaseFund [in orderID key, in passedConfirmation, out fund]
+    
+    PayPal -> Merchant: SendFund [in orderID key, in fund, out sentFund]
+    Merchant -> eBay: ReviewTxn [in orderID key, in sentFund, out revtxn]
+    
+    // Defective Item
+    Shipper -> Merchant: Defective [in orderID key, in name, in address, in item, out defect]
+    Merchant -> eBay: DefectiveNotice [in orderID key, in name, in address, in item, in defect, out defectNotice]
+    eBay -> PayPal: RequestDefectRefund [in orderID key, in defectNotice, out defRefundRequest]
+    PayPal -> eBay: SendDefectRefund [in orderID key, in defRefundRequest, out defRefundSent]
+    eBay -> Buyer: DefectRefund [in orderID key, in defRefundSent, out defectiveRefund]
+    
+    
+    // Cancelation
+    
+
+
+}

@@ -1,0 +1,823 @@
+[
+    {
+        "id": "3f44c1fd638354cf",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "c2f8b35b2b58c5a7",
+        "type": "inject",
+        "z": "3f44c1fd638354cf",
+        "name": "Start",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "_msgid",
+                "v": "1",
+                "vt": "str"
+            },
+            {
+                "p": "confirm",
+                "v": "Buyer->eBay: order&payment",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "order",
+        "payload": "{\"orderID\":1,\"item\":\"Toy\",\"shippingAdrr\":\"000 Imaginary Street, Wonderland\",\"price\":400,\"paymentStatus\":\"paid\",\"orderStatus\":\"order is sent\"}",
+        "payloadType": "json",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "2913a1d4fc42f817"
+            ]
+        ]
+    },
+    {
+        "id": "2913a1d4fc42f817",
+        "type": "function",
+        "z": "3f44c1fd638354cf",
+        "name": "Buyer",
+        "func": "if (msg.topic === \"shipper\") {\nvar trackInfo = {payload: \"Buyer:trackInfo received\"}\n   return [null, trackInfo];\n} else\n{return msg;}",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 270,
+        "y": 220,
+        "wires": [
+            [
+                "79ec7e74acab4eec",
+                "013a22ac5c89c82d"
+            ],
+            [
+                "4101230e87c10dff"
+            ]
+        ]
+    },
+    {
+        "id": "79ec7e74acab4eec",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "BUYER:orderDetails",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "confirm",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 360,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "16fc8c2307da1f13",
+        "type": "function",
+        "z": "3f44c1fd638354cf",
+        "name": "Ebay",
+        "func": "if (msg.topic === \"shipper\") {\n    var trackInfo = {payload: \"eBay:trackInfo received\"}\n    var release = {payload: \"eBay->PayPal: item was delivered, release the funds\"}\n   return [ null, null, null, trackInfo, null];\n}\nelse if (msg.topic == \"merchant\") {\n    var release = {payload: \"eBay->PayPal: item was delivered, release the funds\"}\n    return [ null, null, null, null, release];\n        \n    } else {\nvar newMsg = {payload: msg.payload}\n    newMsg.payload.orderStatus = \"eBay:order received\"\n    newMsg.topic = \"ebay\"\nvar hold = {payload: \"eBay->Paypal: payment, hold request\"}\n    hold.topic = \"hold\"\nvar orderDetails = {payload: msg.payload}\norderDetails.payload.merchant = \"eBay->Merchant: Order Details \"\nreturn [newMsg, hold, orderDetails, null, null]}",
+        "outputs": 5,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 80,
+        "wires": [
+            [
+                "a76abb186c195783"
+            ],
+            [
+                "82bdf1349acb109b",
+                "c9053c3789e9bde2"
+            ],
+            [
+                "ad44480462d242ed"
+            ],
+            [
+                "6506a104e6a55dbc"
+            ],
+            [
+                "0cdcacad40e42c05"
+            ]
+        ]
+    },
+    {
+        "id": "013a22ac5c89c82d",
+        "type": "switch",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "order",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 450,
+        "y": 180,
+        "wires": [
+            [
+                "16fc8c2307da1f13",
+                "1d037fde67f06137"
+            ]
+        ]
+    },
+    {
+        "id": "82bdf1349acb109b",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "EBAY:hold",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 890,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "c9053c3789e9bde2",
+        "type": "function",
+        "z": "3f44c1fd638354cf",
+        "name": "PayPal",
+        "func": "if (msg.topic == \"release\"){\n    var payconfirm = {payload: \"PayPal->Merchant: payment sent\"}\n    payconfirm.topic = \"release\"\n    return[null, payconfirm]\n} else{\nvar payNotification = {payload: \"PayPal->Merchant: payment notification\"}\nreturn payNotification;}",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 180,
+        "wires": [
+            [
+                "53d28a2b95a9ad6a"
+            ],
+            [
+                "26d681b5382fe996",
+                "f09f7915eb52675c"
+            ]
+        ]
+    },
+    {
+        "id": "dfd7f86fe0481011",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "PaymentNotification",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "ad44480462d242ed",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "3",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 520,
+        "y": 560,
+        "wires": [
+            [
+                "b2aab6c8d5c85de5",
+                "d59a5c65979c3a37"
+            ]
+        ]
+    },
+    {
+        "id": "d59a5c65979c3a37",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "orderDetails for Merchant",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload.merchant",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 510,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "68c261f903c59816",
+        "type": "function",
+        "z": "3f44c1fd638354cf",
+        "name": "Merchant",
+        "func": "if (msg.topic == \"release\"){\n    var newM = {payload: \"Merchaint:received payment from PayPal\"}\n    return[null,null,newM, null]\n} else if (msg.topic === \"shipper\")\n     {\nvar trackInfo = {payload: \"Merchant:trackInfo received\"}\nvar delivered = {payload: \"Merchant:item status update:delivered\"}\n    delivered.topic = \"merchant\"\n   return [null, null,null, trackInfo,delivered];\n} else {\nvar ship = {payload:\"Merchant->Shipper:item was sent\"}\nreturn [ship,msg,null, null];}",
+        "outputs": 5,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 740,
+        "wires": [
+            [
+                "383ff060a2569c2b"
+            ],
+            [
+                "301850719f1ef12a"
+            ],
+            [
+                "43718d7288426989"
+            ],
+            [
+                "997753c5c91c9d9f"
+            ],
+            [
+                "94783f1b7039665a",
+                "16fc8c2307da1f13"
+            ]
+        ]
+    },
+    {
+        "id": "383ff060a2569c2b",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "send item for shipping",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1220,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "53d28a2b95a9ad6a",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "0",
+        "randomLast": "3",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 800,
+        "y": 540,
+        "wires": [
+            [
+                "dfd7f86fe0481011",
+                "b2aab6c8d5c85de5"
+            ]
+        ]
+    },
+    {
+        "id": "301850719f1ef12a",
+        "type": "function",
+        "z": "3f44c1fd638354cf",
+        "name": "Shipper",
+        "func": "var pack = {payload: \"Shipper->Buyer:item was packed and shipped\"}\nvar track = {payload: \"Tracking info was sent to parties\"}\nreturn [pack, track];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 1060,
+        "wires": [
+            [
+                "fe72e7c146ef82b3",
+                "9403cfbca8dbd948"
+            ],
+            [
+                "2e451301a517a4e6"
+            ]
+        ]
+    },
+    {
+        "id": "fe72e7c146ef82b3",
+        "type": "change",
+        "z": "3f44c1fd638354cf",
+        "name": "tracking",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "Shipper->Buyer&Seller:traking Info",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "shipper",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 800,
+        "y": 1080,
+        "wires": [
+            [
+                "319554c14e54948f",
+                "0efd22d7e215f53e",
+                "c8002425b2f20c6b"
+            ]
+        ]
+    },
+    {
+        "id": "26d681b5382fe996",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "release",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1100,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "b2aab6c8d5c85de5",
+        "type": "join",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "mode": "custom",
+        "build": "string",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 670,
+        "y": 680,
+        "wires": [
+            [
+                "68c261f903c59816"
+            ]
+        ]
+    },
+    {
+        "id": "9403cfbca8dbd948",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "item status",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 770,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "1d037fde67f06137",
+        "type": "change",
+        "z": "3f44c1fd638354cf",
+        "name": "review",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "Buyer: review of the transaction ",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 130,
+        "y": 620,
+        "wires": [
+            [
+                "09ccee91aeadcb4d"
+            ]
+        ]
+    },
+    {
+        "id": "09ccee91aeadcb4d",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "7",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 140,
+        "y": 720,
+        "wires": [
+            [
+                "612c3d57f0ee84ce"
+            ]
+        ]
+    },
+    {
+        "id": "612c3d57f0ee84ce",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "Transaction review",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 170,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "6506a104e6a55dbc",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "from Shipper",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 810,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "4101230e87c10dff",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "buyer received trackInfo",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 350,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "5b753e273b3ffec5",
+        "type": "change",
+        "z": "3f44c1fd638354cf",
+        "name": "Release the funds",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "eBay->PayPal: item was delivered, release the funds",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "release",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 60,
+        "wires": [
+            [
+                "3240f99ae97b463b"
+            ]
+        ]
+    },
+    {
+        "id": "3240f99ae97b463b",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "3",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "0",
+        "randomLast": "2",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 1300,
+        "y": 100,
+        "wires": [
+            [
+                "c9053c3789e9bde2"
+            ]
+        ]
+    },
+    {
+        "id": "43718d7288426989",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "payment received by merchant",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1310,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "997753c5c91c9d9f",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "trackInfo",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1220,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "94783f1b7039665a",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "item status update",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1200,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "a76abb186c195783",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "orderStatus",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload.orderStatus",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 830,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "319554c14e54948f",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "0",
+        "randomLast": "2",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 630,
+        "y": 880,
+        "wires": [
+            [
+                "2913a1d4fc42f817"
+            ]
+        ]
+    },
+    {
+        "id": "0efd22d7e215f53e",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "4",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "0",
+        "randomLast": "2",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 760,
+        "y": 800,
+        "wires": [
+            [
+                "16fc8c2307da1f13"
+            ]
+        ]
+    },
+    {
+        "id": "c8002425b2f20c6b",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "0",
+        "randomLast": "2",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 890,
+        "y": 940,
+        "wires": [
+            [
+                "68c261f903c59816"
+            ]
+        ]
+    },
+    {
+        "id": "478783a6c4c63080",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "release",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 800,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "2e451301a517a4e6",
+        "type": "debug",
+        "z": "3f44c1fd638354cf",
+        "name": "trackInfo sent",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 1120,
+        "wires": []
+    },
+    {
+        "id": "0cdcacad40e42c05",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "3",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 710,
+        "y": 280,
+        "wires": [
+            [
+                "478783a6c4c63080",
+                "5b753e273b3ffec5"
+            ]
+        ]
+    },
+    {
+        "id": "f09f7915eb52675c",
+        "type": "delay",
+        "z": "3f44c1fd638354cf",
+        "name": "",
+        "pauseType": "random",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "4",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "x": 930,
+        "y": 440,
+        "wires": [
+            [
+                "68c261f903c59816"
+            ]
+        ]
+    }
+]
